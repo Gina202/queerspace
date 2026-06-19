@@ -4,8 +4,9 @@ import { useState, useRef, useTransition } from 'react'
 import { Camera, Loader2, Check, AlertCircle, FileText, Flame, MessageCircle } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { updateProfile, updateAvatar } from './actions'
-import type { Profile } from '@/lib/types'
 import { BoostButton } from './boost-button'
+import type { Profile } from '@/lib/types'
+
 type PostSummary = {
   id: string
   content: string
@@ -34,7 +35,6 @@ export function ProfileForm({
     const file = e.target.files?.[0]
     if (!file) return
 
-    // Preview immediately
     const preview = URL.createObjectURL(file)
     setAvatarUrl(preview)
     setAvatarPending(true)
@@ -83,13 +83,10 @@ export function ProfileForm({
       {/* Avatar */}
       <div className="flex flex-col items-center gap-4 py-6">
         <div className="relative">
-          <div className="w-24 h-24 rounded-full overflow-hidden bg-zinc-800 ring-4 ring-purple-500">
+          <div className="w-24 h-24 rounded-full overflow-hidden bg-zinc-800"
+            style={{ outline: '3px solid #9333ea' }}>
             {avatarUrl ? (
-              <img
-                src={avatarUrl}
-                alt="Avatar"
-                className="w-full h-full object-cover"
-              />
+              <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
             ) : (
               <div className="w-full h-full flex items-center justify-center text-3xl font-bold"
                 style={{ color: '#c084fc' }}>
@@ -98,7 +95,6 @@ export function ProfileForm({
             )}
           </div>
 
-          {/* Camera button */}
           <button
             type="button"
             onClick={() => fileRef.current?.click()}
@@ -226,15 +222,15 @@ export function ProfileForm({
             </div>
           ) : (
             posts.map(post => (
-              <a key={post.id}
-  href={post.status === 'approved' ? `/p/${post.id}` : undefined}
-  className={`block rounded-xl border border-zinc-800 bg-zinc-900/50 p-4 space-y-2 transition ${
-    post.status === 'approved' && 
-    <BoostButton postId={post.id} />
-      ? 'hover:border-zinc-700 hover:bg-zinc-900 cursor-pointer'
-      : 'cursor-default'
-  }`}>
-
+              <a
+                key={post.id}
+                href={post.status === 'approved' ? `/p/${post.id}` : undefined}
+                className={`block rounded-xl border border-zinc-800 bg-zinc-900/50 p-4 space-y-2 transition ${
+                  post.status === 'approved'
+                    ? 'hover:border-zinc-700 hover:bg-zinc-900 cursor-pointer'
+                    : 'cursor-default'
+                }`}
+              >
                 <div className="flex items-center justify-between">
                   <span className={`text-xs font-medium ${statusColor[post.status]}`}>
                     ● {statusLabel[post.status]}
@@ -248,23 +244,27 @@ export function ProfileForm({
 
                 {post.image_url && (
                   <div className="rounded-lg overflow-hidden">
-                    <img
-                      src={post.image_url}
-                      alt=""
-                      className="w-full h-32 object-cover"
-                    />
+                    <img src={post.image_url} alt="" className="w-full h-32 object-cover" />
                   </div>
                 )}
 
-                <div className="flex items-center gap-4 pt-1">
-                  <span className="flex items-center gap-1 text-xs text-zinc-600">
-                    <Flame size={12} /> {post.reaction_count}
-                  </span>
-                  <span className="flex items-center gap-1 text-xs text-zinc-600">
-                    <MessageCircle size={12} /> {post.comment_count}
-                  </span>
-                </div>
+                <div className="flex items-center justify-between pt-1">
+                  <div className="flex items-center gap-4">
+                    <span className="flex items-center gap-1 text-xs text-zinc-600">
+                      <Flame size={12} /> {post.reaction_count}
+                    </span>
+                    <span className="flex items-center gap-1 text-xs text-zinc-600">
+                      <MessageCircle size={12} /> {post.comment_count}
+                    </span>
+                  </div>
 
+                  {/* Boost button — stop click propagating to the post link */}
+                  {post.status === 'approved' && (
+                    <div onClick={e => e.preventDefault()}>
+                      <BoostButton postId={post.id} />
+                    </div>
+                  )}
+                </div>
               </a>
             ))
           )}

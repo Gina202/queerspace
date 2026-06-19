@@ -1,12 +1,20 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { createClient } from '@/lib/supabase/server'
+import { createClient as createServiceClient } from '@supabase/supabase-js'
 import { requireAdmin } from '@/lib/require-admin'
+
+// Service role client — bypasses RLS for admin operations
+function getServiceClient() {
+  return createServiceClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+}
 
 export async function moderatePost(postId: string, status: 'approved' | 'rejected') {
   await requireAdmin()
-  const supabase = await createClient()
+  const supabase = getServiceClient()
 
   const { error } = await supabase
     .from('posts')
@@ -20,7 +28,7 @@ export async function moderatePost(postId: string, status: 'approved' | 'rejecte
 
 export async function deletePost(postId: string) {
   await requireAdmin()
-  const supabase = await createClient()
+  const supabase = getServiceClient()
 
   const { error } = await supabase
     .from('posts')
@@ -34,7 +42,7 @@ export async function deletePost(postId: string) {
 
 export async function deleteComment(commentId: string) {
   await requireAdmin()
-  const supabase = await createClient()
+  const supabase = getServiceClient()
 
   const { error } = await supabase
     .from('comments')
@@ -48,7 +56,7 @@ export async function deleteComment(commentId: string) {
 
 export async function banUser(userId: string) {
   await requireAdmin()
-  const supabase = await createClient()
+  const supabase = getServiceClient()
 
   const { error } = await supabase
     .from('profiles')
@@ -62,7 +70,7 @@ export async function banUser(userId: string) {
 
 export async function unbanUser(userId: string) {
   await requireAdmin()
-  const supabase = await createClient()
+  const supabase = getServiceClient()
 
   const { error } = await supabase
     .from('profiles')
