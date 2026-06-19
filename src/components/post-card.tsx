@@ -11,41 +11,52 @@ import type { Post } from '@/lib/types'
 export function PostCard({
   post,
   currentUserId,
+  isPremium = false,
 }: {
   post: Post
   currentUserId: string | null
+  isPremium?: boolean
 }) {
   const supabase = createClient()
   const [reactionCount, setReactionCount] = useState(post.reaction_count)
   const [userReaction, setUserReaction] = useState(post.user_reaction?.emoji ?? null)
   const [showComments, setShowComments] = useState(false)
   const [commentCount, setCommentCount] = useState(post.comment_count)
+  const [reacting, setReacting] = useState(false)
 
   async function handleReact() {
-  if (!currentUserId) return
+    if (!currentUserId || reacting) return
+    setReacting(true)
 
-  if (userReaction) {
-    await supabase
-      .from('reactions')
-      .delete()
-      .eq('user_id', currentUserId)
-      .eq('post_id', post.id)
+    // Optimistic update first
+    if (userReaction) {
+      setUserReaction(null)
+      setReactionCount(c => Math.max(c - 1, 0))
 
-    await supabase.rpc('decrement_post_reaction', { p_post_id: post.id })
+      await supabase
+        .from('reactions')
+        .delete()
+        .eq('user_id', currentUserId)
+        .eq('post_id', post.id)
+    } else {
+      setUserReaction('🔥')
+      setReactionCount(c => c + 1)
 
-    setReactionCount(c => Math.max(c - 1, 0))
-    setUserReaction(null)
-  } else {
-    await supabase
-      .from('reactions')
-      .insert({ user_id: currentUserId, post_id: post.id, emoji: '🔥' })
+      await supabase
+        .from('reactions')
+        .insert({ user_id: currentUserId, post_id: post.id, emoji: '🔥' })
+    }
 
-    await supabase.rpc('increment_post_reaction', { p_post_id: post.id })
+    // Re-fetch true count from DB (trigger has already run by now)
+    const { data } = await supabase
+      .from('posts')
+      .select('reaction_count')
+      .eq('id', post.id)
+      .single()
 
-    setReactionCount(c => c + 1)
-    setUserReaction('🔥')
+    if (data) setReactionCount(data.reaction_count)
+    setReacting(false)
   }
-}
 
   const avatar = post.profiles?.avatar_url
   const username = post.profiles?.username ?? 'unknown'
@@ -99,7 +110,7 @@ export function PostCard({
 
         <button
           onClick={handleReact}
-          disabled={!currentUserId}
+          disabled={!currentUserId || reacting}
           className={`flex items-center gap-1.5 text-sm transition ${
             userReaction
               ? 'text-orange-400'
@@ -137,6 +148,7 @@ export function PostCard({
           postId={post.id}
           currentUserId={currentUserId}
           onCommentAdded={() => setCommentCount(c => c + 1)}
+          isPremium={isPremium}
         />
       )}
 

@@ -8,6 +8,16 @@ export default async function FeedPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('is_premium, premium_until')
+    .eq('id', user?.id ?? '')
+    .single()
+
+  const isPremium = profile?.is_premium && profile?.premium_until
+    ? new Date(profile.premium_until) > new Date()
+    : false
+
   const { data: posts } = await supabase
     .from('posts')
     .select(`
@@ -51,7 +61,7 @@ export default async function FeedPage() {
       ) : (
         <div className="divide-y divide-zinc-900">
           {postsWithReactions.map(post => (
-            <PostCard key={post.id} post={post} currentUserId={user?.id ?? null} />
+            <PostCard key={post.id} post={post} currentUserId={user?.id ?? null} isPremium={isPremium} />
           ))}
         </div>
       )}

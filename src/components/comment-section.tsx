@@ -6,14 +6,17 @@ import { Flame, Loader2, Send } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import type { Comment } from '@/lib/types'
 
+
 export function CommentSection({
   postId,
   currentUserId,
   onCommentAdded,
+  isPremium,
 }: {
   postId: string
   currentUserId: string | null
   onCommentAdded: () => void
+  isPremium: boolean
 }) {
   const supabase = createClient()
   const [comments, setComments] = useState<Comment[]>([])
@@ -22,6 +25,8 @@ export function CommentSection({
   const [submitting, setSubmitting] = useState(false)
   const [reactions, setReactions] = useState<Record<string, string>>({})
 
+  const visibleComments = isPremium ? comments : comments.slice(0,20)
+  const hiddenCount = comments.length - visibleComments.length
   useEffect(() => {
     fetchComments()
   }, [postId])
@@ -129,7 +134,7 @@ export function CommentSection({
           {comments.length === 0 && (
             <p className="text-xs text-zinc-700 text-center py-2">No comments yet</p>
           )}
-          {comments.map(comment => (
+          {visibleComments.map(comment => (
             <div key={comment.id} className="flex gap-2.5">
               <div className="w-7 h-7 rounded-full bg-zinc-800 flex-shrink-0 overflow-hidden">
                 {comment.profiles?.avatar_url ? (
@@ -167,6 +172,16 @@ export function CommentSection({
               </div>
             </div>
           ))}
+          {hiddenCount > 0 && (
+            <div className="rounded-xl bg-zinc-900 px-3 py-2 text-center text-xs text-zinc-400">
+              {hiddenCount} more comment{hiddenCount > 1 ? 's' : ''} — Premium only
+              <div className="mt-2">
+                <a href="/premium" className="text-purple-300 hover:text-purple-100 transition">
+                  Unlock Premium
+                </a>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

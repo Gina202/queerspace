@@ -2,7 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { logout } from '@/app/auth/actions'
 import Link from 'next/link'
-import { Home, PlusSquare, User } from 'lucide-react'
+import { Home, PlusSquare, User, Zap } from 'lucide-react'
 
 export default async function AppLayout({
   children,
@@ -44,6 +44,9 @@ export default async function AppLayout({
               className="p-2 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition">
               <User size={20} />
             </Link>
+            <Link href="/premium" className="p-2 rounded-lg transition" style={{ color: '#c084fc' }}>
+              <Zap size={20} />
+            </Link>
             <form action={logout} className="ml-2">
               <button
                 type="submit"
@@ -79,6 +82,11 @@ export default async function AppLayout({
             className="flex flex-col items-center gap-1 text-zinc-500 hover:text-purple-400 transition">
             <User size={22} />
             <span className="text-[10px]">Profile</span>
+          </Link>
+          <Link href="/premium"
+            className="flex flex-col items-center gap-1 text-zinc-500 hover:text-purple-400 transition">
+            <Zap size={22} />
+            <span className="text-[10px]">Premium</span>
           </Link>
         </div>
       </nav>

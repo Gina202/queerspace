@@ -25,16 +25,33 @@ export async function updateSession(request: NextRequest) {
     }
   )
 
+  // IMPORTANT: getUser() must be called for the cookies to refresh properly
   const { data: { user } } = await supabase.auth.getUser()
 
-  // Protect routes that require auth
+  // Protect paths requiring authentication
   const protectedPaths = ['/feed', '/profile', '/post']
-  const isProtected = protectedPaths.some(p => request.nextUrl.pathname.startsWith(p))
+  const isProtected = protectedPaths.some((p) => request.nextUrl.pathname.startsWith(p))
 
-  if (isProtected && !user) {
-    const url = request.nextUrl.clone()
-    url.pathname = '/login'
-    return NextResponse.redirect(url)
+  if (isProtected) {
+    // 1. Kick out unauthenticated users
+    if (!user) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/login'
+      return NextResponse.redirect(url)
+    }
+
+    // 2. Kick out banned users
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('is_banned')
+      .eq('id', user.id)
+      .single()
+
+    if (profile?.is_banned) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/login'
+      return NextResponse.redirect(url)
+    }
   }
 
   return supabaseResponse
