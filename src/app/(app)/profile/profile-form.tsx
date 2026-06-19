@@ -5,7 +5,7 @@ import { Camera, Loader2, Check, AlertCircle, FileText, Flame, MessageCircle } f
 import { formatDistanceToNow } from 'date-fns'
 import { updateProfile, updateAvatar } from './actions'
 import type { Profile } from '@/lib/types'
-
+import { BoostButton } from './boost-button'
 type PostSummary = {
   id: string
   content: string
@@ -229,7 +229,8 @@ export function ProfileForm({
               <a key={post.id}
   href={post.status === 'approved' ? `/p/${post.id}` : undefined}
   className={`block rounded-xl border border-zinc-800 bg-zinc-900/50 p-4 space-y-2 transition ${
-    post.status === 'approved'
+    post.status === 'approved' && 
+    <BoostButton postId={post.id} />
       ? 'hover:border-zinc-700 hover:bg-zinc-900 cursor-pointer'
       : 'cursor-default'
   }`}>

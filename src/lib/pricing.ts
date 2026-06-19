@@ -14,3 +14,27 @@ export const PLANS = {
 } as const
 
 export type PlanKey = keyof typeof PLANS
+
+
+export const BOOST_TIERS = {
+  small: {
+    label: 'Small boost',
+    price_usd: 2.99,
+    boost_points: 50,
+    description: 'Give your post a nudge',
+  },
+  medium: {
+    label: 'Medium boost',
+    price_usd: 7.99,
+    boost_points: 150,
+    description: 'Push your post to the top',
+  },
+  large: {
+    label: 'Large boost',
+    price_usd: 14.99,
+    boost_points: 350,
+    description: 'Dominate the feed all day',
+  },
+} as const
+
+export type BoostTier = keyof typeof BOOST_TIERS

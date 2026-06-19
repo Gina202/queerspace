@@ -18,6 +18,7 @@ export default async function FeedPage() {
     ? new Date(profile.premium_until) > new Date()
     : false
 
+  // Fetch approved posts with ranking score
   const { data: posts } = await supabase
     .from('posts')
     .select(`
@@ -26,13 +27,24 @@ export default async function FeedPage() {
     `)
     .eq('status', 'approved')
     .order('created_at', { ascending: false })
-    .limit(20)
+    .limit(50)
     .returns<Post[]>()
 
-  // Get current user's reactions to these posts
+  // Sort by ranking formula client-side
+  // score = (comments * 3) + (reactions * 2) + boost / time decay
+  const ranked = (posts ?? []).sort((a, b) => {
+    const score = (post: Post) => {
+      const ageHours = (Date.now() - new Date(post.created_at).getTime()) / 3600000
+      const engagement = (post.comment_count * 3) + (post.reaction_count * 2) + post.boost_score
+      return engagement / Math.pow(ageHours + 2, 1.5)
+    }
+    return score(b) - score(a)
+  })
+
+  // Get current user reactions
   let userReactions: Record<string, string> = {}
-  if (user && posts?.length) {
-    const postIds = posts.map(p => p.id)
+  if (user && ranked.length) {
+    const postIds = ranked.map(p => p.id)
     const { data: reactions } = await supabase
       .from('reactions')
       .select('post_id, emoji')
@@ -46,10 +58,10 @@ export default async function FeedPage() {
     }
   }
 
-  const postsWithReactions = posts?.map(post => ({
+  const postsWithReactions = ranked.map(post => ({
     ...post,
     user_reaction: userReactions[post.id] ? { emoji: userReactions[post.id] } : null,
-  })) ?? []
+  }))
 
   return (
     <div className="py-4">
@@ -61,7 +73,12 @@ export default async function FeedPage() {
       ) : (
         <div className="divide-y divide-zinc-900">
           {postsWithReactions.map(post => (
-            <PostCard key={post.id} post={post} currentUserId={user?.id ?? null} isPremium={isPremium} />
+            <PostCard
+              key={post.id}
+              post={post}
+              currentUserId={user?.id ?? null}
+              isPremium={isPremium}
+            />
           ))}
         </div>
       )}
