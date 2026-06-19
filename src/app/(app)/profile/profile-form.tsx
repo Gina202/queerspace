@@ -83,8 +83,7 @@ export function ProfileForm({
       {/* Avatar */}
       <div className="flex flex-col items-center gap-4 py-6">
         <div className="relative">
-          <div className="w-24 h-24 rounded-full overflow-hidden bg-zinc-800 ring-4"
-            style={{ ringColor: '#9333ea' }}>
+          <div className="w-24 h-24 rounded-full overflow-hidden bg-zinc-800 ring-4 ring-purple-500">
             {avatarUrl ? (
               <img
                 src={avatarUrl}
