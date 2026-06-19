@@ -22,38 +22,30 @@ export function PostCard({
   const [commentCount, setCommentCount] = useState(post.comment_count)
 
   async function handleReact() {
-    if (!currentUserId) return
+  if (!currentUserId) return
 
-    if (userReaction) {
-      // Remove reaction
-      await supabase
-        .from('reactions')
-        .delete()
-        .eq('user_id', currentUserId)
-        .eq('post_id', post.id)
+  if (userReaction) {
+    await supabase
+      .from('reactions')
+      .delete()
+      .eq('user_id', currentUserId)
+      .eq('post_id', post.id)
 
-      await supabase
-        .from('posts')
-        .update({ reaction_count: reactionCount - 1 })
-        .eq('id', post.id)
+    await supabase.rpc('decrement_post_reaction', { p_post_id: post.id })
 
-      setReactionCount(c => c - 1)
-      setUserReaction(null)
-    } else {
-      // Add reaction
-      await supabase
-        .from('reactions')
-        .insert({ user_id: currentUserId, post_id: post.id, emoji: '🔥' })
+    setReactionCount(c => Math.max(c - 1, 0))
+    setUserReaction(null)
+  } else {
+    await supabase
+      .from('reactions')
+      .insert({ user_id: currentUserId, post_id: post.id, emoji: '🔥' })
 
-      await supabase
-        .from('posts')
-        .update({ reaction_count: reactionCount + 1 })
-        .eq('id', post.id)
+    await supabase.rpc('increment_post_reaction', { p_post_id: post.id })
 
-      setReactionCount(c => c + 1)
-      setUserReaction('🔥')
-    }
+    setReactionCount(c => c + 1)
+    setUserReaction('🔥')
   }
+}
 
   const avatar = post.profiles?.avatar_url
   const username = post.profiles?.username ?? 'unknown'

@@ -80,34 +80,42 @@ export function CommentSection({
   }
 
   async function handleReactComment(commentId: string) {
-    if (!currentUserId) return
+  if (!currentUserId) return
 
-    if (reactions[commentId]) {
-      await supabase
-        .from('reactions')
-        .delete()
-        .eq('user_id', currentUserId)
-        .eq('comment_id', commentId)
+  if (reactions[commentId]) {
+    await supabase
+      .from('reactions')
+      .delete()
+      .eq('user_id', currentUserId)
+      .eq('comment_id', commentId)
 
-      setReactions(r => {
-        const copy = { ...r }
-        delete copy[commentId]
-        return copy
-      })
-      setComments(c =>
-        c.map(c => c.id === commentId ? { ...c, reaction_count: c.reaction_count - 1 } : c)
-      )
-    } else {
-      await supabase
-        .from('reactions')
-        .insert({ user_id: currentUserId, comment_id: commentId, emoji: '🔥' })
+    await supabase.rpc('decrement_comment_reaction', { p_comment_id: commentId })
 
-      setReactions(r => ({ ...r, [commentId]: '🔥' }))
-      setComments(c =>
-        c.map(c => c.id === commentId ? { ...c, reaction_count: c.reaction_count + 1 } : c)
-      )
-    }
+    setReactions(r => {
+      const copy = { ...r }
+      delete copy[commentId]
+      return copy
+    })
+    setComments(c =>
+      c.map(cm => cm.id === commentId
+        ? { ...cm, reaction_count: Math.max(cm.reaction_count - 1, 0) }
+        : cm)
+    )
+  } else {
+    await supabase
+      .from('reactions')
+      .insert({ user_id: currentUserId, comment_id: commentId, emoji: '🔥' })
+
+    await supabase.rpc('increment_comment_reaction', { p_comment_id: commentId })
+
+    setReactions(r => ({ ...r, [commentId]: '🔥' }))
+    setComments(c =>
+      c.map(cm => cm.id === commentId
+        ? { ...cm, reaction_count: cm.reaction_count + 1 }
+        : cm)
+    )
   }
+}
 
   return (
     <div className="mt-4 border-t border-zinc-900 pt-4">
