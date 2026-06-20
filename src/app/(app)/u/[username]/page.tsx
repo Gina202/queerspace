@@ -21,7 +21,7 @@ export default async function PublicProfilePage({
     .eq('username', username)
     .single<Profile>()
 
-  if (!profile || profile.is_banned) notFound()
+  if (!profile || profile.is_banned || profile.is_bot) notFound()
 
   const { data: posts } = await supabase
     .from('posts')

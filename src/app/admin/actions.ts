@@ -92,3 +92,31 @@ export async function unbanUser(userId: string) {
   revalidatePath('/admin/users')
   return { success: true }
 }
+
+export async function reEngagePost(postId: string) {
+  await requireAdmin()
+  const supabase = getServiceClient()
+
+  // Clear existing pending queue for this post
+  await supabase
+    .from('bot_comment_queue')
+    .delete()
+    .eq('post_id', postId)
+    .eq('status', 'pending')
+
+  await supabase
+    .from('bot_reaction_queue')
+    .delete()
+    .eq('post_id', postId)
+    .eq('status', 'pending')
+
+  // Re-schedule fresh engagement
+  try {
+    await scheduleEngagement(postId)
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : 'Failed to schedule' }
+  }
+
+  revalidatePath('/admin')
+  return { success: true }
+}

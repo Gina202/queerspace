@@ -7,11 +7,12 @@ const supabase = createClient(
 
 // Wave timing in minutes from post approval
 const WAVES = [
-  { wave: 1, minMin: 5,   maxMin: 20,  commentCount: [1, 2], reactionCount: [2, 4] },
-  { wave: 2, minMin: 25,  maxMin: 60,  commentCount: [2, 4], reactionCount: [4, 8] },
-  { wave: 3, minMin: 70,  maxMin: 150, commentCount: [3, 6], reactionCount: [6, 12] },
-  { wave: 4, minMin: 160, maxMin: 240, commentCount: [2, 4], reactionCount: [4, 8] },
-  { wave: 5, minMin: 260, maxMin: 360, commentCount: [1, 2], reactionCount: [2, 5] },
+  { wave: 1, minMin: 3,   maxMin: 15,  commentCount: [3, 6],   reactionCount: [8, 15] },
+  { wave: 2, minMin: 18,  maxMin: 45,  commentCount: [6, 12],  reactionCount: [15, 25] },
+  { wave: 3, minMin: 50,  maxMin: 120, commentCount: [10, 18], reactionCount: [25, 40] },
+  { wave: 4, minMin: 130, maxMin: 210, commentCount: [8, 14],  reactionCount: [20, 35] },
+  { wave: 5, minMin: 220, maxMin: 300, commentCount: [5, 10],  reactionCount: [15, 25] },
+  { wave: 6, minMin: 310, maxMin: 360, commentCount: [3, 6],   reactionCount: [10, 20] },
 ]
 
 function randomBetween(min: number, max: number): number {

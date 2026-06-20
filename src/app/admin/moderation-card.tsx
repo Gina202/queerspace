@@ -2,8 +2,8 @@
 
 import { useState } from 'react'
 import { formatDistanceToNow } from 'date-fns'
-import { Check, X, Trash2, Loader2 } from 'lucide-react'
-import { moderatePost, deletePost } from './actions'
+import { Check, X, Trash2, Loader2, Zap } from 'lucide-react'
+import { moderatePost, deletePost, reEngagePost } from './actions'
 import type { Post } from '@/lib/types'
 
 export function ModerationCard({
@@ -13,21 +13,30 @@ export function ModerationCard({
   post: Post
   mode: 'pending' | 'reviewed'
 }) {
-  const [loading, setLoading] = useState<'approve' | 'reject' | 'delete' | null>(null)
+  const [loading, setLoading] = useState<'approve' | 'reject' | 'delete' | 'reengage'    | null>(null)
   const [done, setDone] = useState(false)
 
   if (done) return null
+ 
 
-  async function handleAction(action: 'approve' | 'reject' | 'delete') {
+  async function handleAction(action: 'approve' | 'reject' | 'delete' | 'reengage') {
     setLoading(action)
     if (action === 'delete') {
       await deletePost(post.id)
+    } else if (action === 'reengage') {
+      await reEngagePost(post.id)
     } else {
       await moderatePost(post.id, action === 'approve' ? 'approved' : 'rejected')
     }
     setDone(true)
     setLoading(null)
   }
+   async function handleReEngage() {
+  setLoading('reengage')
+  await reEngagePost(post.id)
+  setLoading(null)
+  
+}
 
   const username = post.profiles?.username ?? 'unknown'
   const avatar = post.profiles?.avatar_url
@@ -79,6 +88,19 @@ export function ModerationCard({
 
       {/* Actions */}
       <div className="flex items-center gap-2 pt-1">
+        {post.status === 'approved' && (
+  <button
+    onClick={() => handleReEngage()}
+    disabled={!!loading}
+    className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium bg-purple-500/10 text-purple-400 border border-purple-500/20 hover:bg-purple-500/20 transition disabled:opacity-50"
+  >
+    {loading === 'reengage'
+      ? <Loader2 size={12} className="animate-spin" />
+      : <Zap size={12} />
+    }
+    Re-engage
+  </button>
+)}
         {mode === 'pending' && (
           <>
             <button

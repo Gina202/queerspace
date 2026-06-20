@@ -32,7 +32,7 @@ export async function GET(req: NextRequest) {
     .select('id, post_id, bot_id, content')
     .eq('status', 'pending')
     .lte('scheduled_for', now)
-    .limit(20)
+    .limit(50)
 
   if (commentFetchError) {
     errors.push(`Comment fetch error: ${commentFetchError.message}`)
@@ -70,7 +70,7 @@ export async function GET(req: NextRequest) {
     .select('id, post_id, bot_id, emoji')
     .eq('status', 'pending')
     .lte('scheduled_for', now)
-    .limit(30)
+    .limit(100)
 
   if (reactionFetchError) {
     errors.push(`Reaction fetch error: ${reactionFetchError.message}`)
