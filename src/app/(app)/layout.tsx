@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation'
 import { logout } from '@/app/auth/actions'
 import Link from 'next/link'
 import { Home, PlusSquare, User, Zap } from 'lucide-react'
-
+import { NotificationBell } from '@/components/notification-bell'
 export default async function AppLayout({
   children,
 }: {
@@ -40,6 +40,8 @@ export default async function AppLayout({
               className="p-2 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition">
               <PlusSquare size={20} />
             </Link>
+            {/* Notification bell */}
+            <NotificationBell userId={user.id} />
             <Link href="/profile"
               className="p-2 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition">
               <User size={20} />

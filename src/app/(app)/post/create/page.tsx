@@ -5,32 +5,44 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { ImagePlus, X, Loader2 } from 'lucide-react'
 
+const MAX_IMAGES = 3
+
 export default function CreatePostPage() {
   const router = useRouter()
   const supabase = createClient()
   const fileRef = useRef<HTMLInputElement>(null)
 
   const [content, setContent] = useState('')
-  const [image, setImage] = useState<File | null>(null)
-  const [preview, setPreview] = useState<string | null>(null)
+  const [images, setImages] = useState<File[]>([])
+  const [previews, setPreviews] = useState<string[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  function handleImage(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (!file) return
-    if (file.size > 10 * 1024 * 1024) {
-      setError('Image must be under 10MB')
-      return
+  function handleImages(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files ?? [])
+    if (!files.length) return
+
+    const remaining = MAX_IMAGES - images.length
+    const toAdd = files.slice(0, remaining)
+
+    for (const file of toAdd) {
+      if (file.size > 10 * 1024 * 1024) {
+        setError('Each image must be under 10MB')
+        return
+      }
     }
-    setImage(file)
-    setPreview(URL.createObjectURL(file))
+
+    setImages(prev => [...prev, ...toAdd])
+    setPreviews(prev => [...prev, ...toAdd.map(f => URL.createObjectURL(f))])
+    setError(null)
+
+    // Reset input so same file can be re-selected
+    if (fileRef.current) fileRef.current.value = ''
   }
 
-  function removeImage() {
-    setImage(null)
-    setPreview(null)
-    if (fileRef.current) fileRef.current.value = ''
+  function removeImage(index: number) {
+    setImages(prev => prev.filter((_, i) => i !== index))
+    setPreviews(prev => prev.filter((_, i) => i !== index))
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -43,25 +55,30 @@ export default function CreatePostPage() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('Not authenticated')
 
-      let image_url: string | null = null
+      const image_urls: string[] = []
 
-      if (image) {
+      // Upload all images
+      for (const image of images) {
         const ext = image.name.split('.').pop()
-        const path = `${user.id}/${Date.now()}.${ext}`
+        const path = `${user.id}/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`
+
         const { error: uploadError } = await supabase.storage
           .from('posts')
           .upload(path, image, { contentType: image.type })
+
         if (uploadError) throw uploadError
 
         const { data: urlData } = supabase.storage
           .from('posts')
           .getPublicUrl(path)
-        image_url = urlData.publicUrl
+
+        image_urls.push(urlData.publicUrl)
       }
 
       const { error: postError } = await supabase.from('posts').insert({
         content: content.trim(),
-        image_url,
+        image_url: image_urls[0] ?? null,
+        image_urls,
         user_id: user.id,
         status: 'pending',
       })
@@ -99,35 +116,69 @@ export default function CreatePostPage() {
 
         <div className="flex items-center justify-between text-xs text-zinc-600">
           <span>{content.length}/1000</span>
+          <span>{images.length}/{MAX_IMAGES} photos</span>
         </div>
 
-        {/* Image preview */}
-        {preview && (
-          <div className="relative rounded-xl overflow-hidden">
-            <img src={preview} alt="Preview" className="w-full max-h-80 object-cover" />
-            <button
-              type="button"
-              onClick={removeImage}
-              className="absolute top-2 right-2 rounded-full bg-black/70 p-1.5 text-white hover:bg-black transition">
-              <X size={16} />
-            </button>
-          </div>
-        )}
+       {/* Image previews grid */}
+{previews.length > 0 && (
+  <div className={`grid gap-1.5 rounded-xl overflow-hidden ${
+    previews.length === 1 ? 'grid-cols-1' :
+    previews.length === 2 ? 'grid-cols-2' :
+    'grid-cols-2'
+  }`}>
+    {previews.map((preview, i) => (
+      <div
+        key={i}
+        className={`relative overflow-hidden bg-zinc-900 ${
+          previews.length === 3 && i === 0 ? 'col-span-2' : ''
+        }`}
+        style={{
+          height: previews.length === 1 ? '280px' :
+                  previews.length === 2 ? '200px' :
+                  i === 0 ? '200px' : '140px'
+        }}
+      >
+        <img
+          src={preview}
+          alt={`Preview ${i + 1}`}
+          className="w-full h-full object-cover"
+        />
+        <button
+          type="button"
+          onClick={() => removeImage(i)}
+          className="absolute top-1.5 right-1.5 rounded-full bg-black/70 p-1 text-white hover:bg-black transition"
+        >
+          <X size={14} />
+        </button>
+        <div className="absolute bottom-1.5 left-1.5 bg-black/50 rounded-md px-1.5 py-0.5 text-[10px] text-white">
+          {i + 1}/{previews.length}
+        </div>
+      </div>
+    ))}
+  </div>
+)}
 
         {/* Actions */}
         <div className="flex items-center justify-between pt-2">
-          <button
-            type="button"
-            onClick={() => fileRef.current?.click()}
-            className="flex items-center gap-2 text-sm text-zinc-400 hover:text-purple-400 transition">
-            <ImagePlus size={18} />
-            Add photo
-          </button>
+          {images.length < MAX_IMAGES ? (
+            <button
+              type="button"
+              onClick={() => fileRef.current?.click()}
+              className="flex items-center gap-2 text-sm text-zinc-400 hover:text-purple-400 transition"
+            >
+              <ImagePlus size={18} />
+              {images.length === 0 ? 'Add photos' : 'Add more'}
+            </button>
+          ) : (
+            <span className="text-xs text-zinc-600">Max 3 photos</span>
+          )}
+
           <input
             ref={fileRef}
             type="file"
             accept="image/*"
-            onChange={handleImage}
+            multiple
+            onChange={handleImages}
             className="hidden"
           />
 

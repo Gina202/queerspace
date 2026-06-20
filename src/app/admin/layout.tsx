@@ -12,7 +12,7 @@ export default async function AdminLayout({
     { href: '/admin', label: 'Moderation' },
     { href: '/admin/users', label: 'Users' },
     { href: '/admin/analytics', label: 'Analytics' },
-    {href:  '/admin.engagement', label: 'Engagement'},
+    {href:  '/admin/engagement', label: 'Engagement'},
 ]
 
   return (

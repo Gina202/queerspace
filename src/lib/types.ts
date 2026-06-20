@@ -14,6 +14,7 @@ export type Post = {
   user_id: string
   content: string
   image_url: string | null
+  image_urls: string[]
   status: 'pending' | 'approved' | 'rejected'
   boost_score: number
   reaction_count: number
