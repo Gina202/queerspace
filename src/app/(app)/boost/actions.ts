@@ -3,7 +3,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { createPaymentInvoice } from '@/lib/nowpayments'
 import { BOOST_TIERS, type BoostTier } from '@/lib/pricing'
-
 export async function startBoost(
   postId: string,
   tier: BoostTier
@@ -12,20 +11,19 @@ export async function startBoost(
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Not authenticated' }
 
-  // Verify post belongs to user
+  // Verify post exists and is approved — no ownership check
   const { data: post } = await supabase
     .from('posts')
-    .select('id, status, user_id')
+    .select('id, status')
     .eq('id', postId)
-    .eq('user_id', user.id)
+    .eq('status', 'approved')
     .single()
 
-  if (!post) return { error: 'Post not found' }
-  if (post.status !== 'approved') return { error: 'Only approved posts can be boosted' }
+  if (!post) return { error: 'Post not found or not yet approved' }
 
   const selectedTier = BOOST_TIERS[tier]
-  const orderId = `boost_${user.id}_${postId}_${Date.now()}`
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL!
+  const orderId = `boost_${user.id}_${Date.now()}`
+  const appUrl = (process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000').replace(/\/$/, '')
 
   const { error: insertError } = await supabase.from('payments').insert({
     user_id: user.id,
@@ -45,7 +43,7 @@ export async function startBoost(
       priceUsd: selectedTier.price_usd,
       description: `QueerSpace Boost — ${selectedTier.label}`,
       successUrl: `${appUrl}/boost/success`,
-      cancelUrl: `${appUrl}/profile`,
+      cancelUrl: `${appUrl}/feed`,
     })
     return { url: invoice.invoice_url }
   } catch (err) {

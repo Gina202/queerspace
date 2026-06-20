@@ -7,6 +7,7 @@ import { Flame, MessageCircle, Share2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { CommentSection } from '@/components/comment-section'
 import { ImageLightbox } from '@/components/image-lightbox'
+import { PostOptionsMenu } from '@/components/post-options-menu'
 import type { Post } from '@/lib/types'
 
 export function PostCard({
@@ -56,7 +57,6 @@ export function PostCard({
     setReacting(false)
   }
 
-  // Resolve images — prefer image_urls array, fall back to image_url
   const images = post.image_urls?.length
     ? post.image_urls
     : post.image_url
@@ -84,7 +84,7 @@ export function PostCard({
               )}
             </div>
           </Link>
-          <div>
+          <div className="flex-1 min-w-0">
             <Link href={`/u/${username}`}>
               <span className="text-sm font-semibold text-white hover:text-purple-400 transition">
                 @{username}
@@ -92,6 +92,11 @@ export function PostCard({
             </Link>
             <p className="text-xs text-zinc-600">{timeAgo}</p>
           </div>
+          <PostOptionsMenu
+            postId={post.id}
+            postStatus={post.status}
+            isOwner={currentUserId === post.user_id}
+          />
         </div>
 
         {/* Content */}
@@ -101,25 +106,16 @@ export function PostCard({
 
         {/* Image grid */}
         {images.length > 0 && (
-          <div
-            className={`grid gap-1 mb-3 rounded-xl overflow-hidden ${
-              images.length === 1 ? 'grid-cols-1' : 'grid-cols-2'
-            }`}
-          >
+          <div className={`grid gap-1 mb-3 rounded-xl overflow-hidden ${images.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
             {images.map((url, i) => {
-              // 3 images: first spans full width
               const isWide = images.length === 3 && i === 0
               return (
                 <div
                   key={i}
                   onClick={() => setLightbox({ images, index: i })}
-                  className={`relative overflow-hidden bg-zinc-900 cursor-pointer group ${
-                    isWide ? 'col-span-2' : ''
-                  }`}
+                  className={`relative overflow-hidden bg-zinc-900 cursor-pointer group ${isWide ? 'col-span-2' : ''}`}
                   style={{
-                    height: images.length === 1 ? '320px' :
-                            images.length === 2 ? '220px' :
-                            isWide ? '220px' : '150px'
+                    height: images.length === 1 ? '320px' : images.length === 2 ? '220px' : isWide ? '220px' : '150px'
                   }}
                 >
                   <img
@@ -128,7 +124,6 @@ export function PostCard({
                     className="w-full h-full object-cover transition duration-200 group-hover:scale-105"
                     loading="lazy"
                   />
-                  {/* Hover overlay */}
                   <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition duration-200" />
                 </div>
               )
@@ -141,11 +136,7 @@ export function PostCard({
           <button
             onClick={handleReact}
             disabled={!currentUserId || reacting}
-            className={`flex items-center gap-1.5 text-sm transition ${
-              userReaction
-                ? 'text-orange-400'
-                : 'text-zinc-500 hover:text-orange-400'
-            } disabled:opacity-30`}
+            className={`flex items-center gap-1.5 text-sm transition ${userReaction ? 'text-orange-400' : 'text-zinc-500 hover:text-orange-400'} disabled:opacity-30`}
           >
             <Flame size={17} className={userReaction ? 'fill-orange-400' : ''} />
             <span>{reactionCount}</span>

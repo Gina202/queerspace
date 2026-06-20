@@ -75,7 +75,7 @@ export function CommentSection({
 
     if (newComment) {
       // Update comment count on post
-      await supabase.rpc('increment_comment_count', { post_id: postId })
+      // await supabase.rpc('increment_comment_count', { post_id: postId })
       setComments(c => [...c, newComment])
       onCommentAdded()
     }

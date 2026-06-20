@@ -77,31 +77,49 @@ export async function GET(req: NextRequest) {
   }
 
   if (dueReactions && dueReactions.length > 0) {
-    for (const item of dueReactions) {
-      const { error: reactionError } = await supabase
-        .from('reactions')
-        .insert({
-          post_id: item.post_id,
-          user_id: item.bot_id,
-          emoji: item.emoji,
-        })
+  for (const item of dueReactions) {
 
-      if (!reactionError) {
-        await supabase
-          .from('bot_reaction_queue')
-          .update({ status: 'done' })
-          .eq('id', item.id)
-        reactionsProcessed++
-      } else {
-        errors.push(`Reaction insert error: ${reactionError.message}`)
-        await supabase
-          .from('bot_reaction_queue')
-          .update({ status: 'failed' })
-          .eq('id', item.id)
-      }
+    // Check if already reacted
+    const { data: existing } = await supabase
+      .from('reactions')
+      .select('id')
+      .eq('user_id', item.bot_id)
+      .eq('post_id', item.post_id)
+      .maybeSingle()
+
+    if (existing) {
+      // Already reacted — mark done silently, not failed
+      await supabase
+        .from('bot_reaction_queue')
+        .update({ status: 'done' })
+        .eq('id', item.id)
+      continue
+    }
+
+    const { error: reactionError } = await supabase
+      .from('reactions')
+      .insert({
+        post_id: item.post_id,
+        user_id: item.bot_id,
+        emoji: item.emoji,
+      })
+
+    if (!reactionError) {
+      await supabase
+        .from('bot_reaction_queue')
+        .update({ status: 'done' })
+        .eq('id', item.id)
+      reactionsProcessed++
+    } else {
+      // Still a real error — mark done anyway to avoid retrying duplicates
+      await supabase
+        .from('bot_reaction_queue')
+        .update({ status: 'done' })
+        .eq('id', item.id)
+      errors.push(`Reaction insert: ${reactionError.message}`)
     }
   }
-
+}
   return NextResponse.json({
     ok: true,
     commentsProcessed,

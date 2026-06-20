@@ -240,7 +240,13 @@ export default async function HomePage() {
           <p className="text-xs text-zinc-700">
             © {new Date().getFullYear()} QueerSpace. All rights reserved.
           </p>
-          <div className="flex items-center gap-4">
+         <div className="flex items-center gap-4">
+            <Link href="/terms" className="text-xs text-zinc-600 hover:text-zinc-400 transition">
+              Terms
+            </Link>
+            <Link href="/privacy" className="text-xs text-zinc-600 hover:text-zinc-400 transition">
+              Privacy
+            </Link>
             <Link href="/login" className="text-xs text-zinc-600 hover:text-zinc-400 transition">
               Sign in
             </Link>

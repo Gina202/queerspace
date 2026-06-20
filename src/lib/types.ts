@@ -6,6 +6,7 @@ export type Profile = {
   is_premium: boolean
   role: 'user' | 'admin' | 'moderator'
   is_banned: boolean
+  is_bot: boolean
   created_at: string
 }
 

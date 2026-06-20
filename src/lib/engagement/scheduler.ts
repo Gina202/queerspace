@@ -2,10 +2,15 @@ import { createClient } from '@supabase/supabase-js'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+  }
 )
 
-// Wave timing in minutes from post approval
 const WAVES = [
   { wave: 1, minMin: 3,   maxMin: 15,  commentCount: [3, 6],   reactionCount: [8, 15] },
   { wave: 2, minMin: 18,  maxMin: 45,  commentCount: [6, 12],  reactionCount: [15, 25] },
@@ -24,42 +29,46 @@ function randomItem<T>(arr: T[]): T {
 }
 
 export async function scheduleEngagement(postId: string) {
-  // Fetch active bots
   const { data: bots } = await supabase
     .from('bot_profiles')
     .select('id, persona')
     .eq('is_active', true)
     .limit(600)
 
-  if (!bots || bots.length === 0) return
+  if (!bots || bots.length === 0) {
+    console.log('No active bots found')
+    return
+  }
 
-  // Fetch comment templates
   const { data: templates } = await supabase
     .from('bot_comment_templates')
     .select('id, content, persona')
 
-  if (!templates || templates.length === 0) return
+  if (!templates || templates.length === 0) {
+    console.log('No comment templates found')
+    return
+  }
 
   const now = new Date()
   const usedBotIds = new Set<string>()
+  const usedReactionBotIds = new Set<string>()
   const commentQueue: object[] = []
   const reactionQueue: object[] = []
 
   for (const wave of WAVES) {
     const commentCount = randomBetween(wave.commentCount[0], wave.commentCount[1])
-    const reactionCount = randomBetween(wave.reactionCount[0], wave.reactionCount[1])
 
     // Pick unique bots for comments
-    const availableBots = bots.filter(b => !usedBotIds.has(b.id))
-    if (availableBots.length === 0) break
+    const availableCommentBots = bots.filter(b => !usedBotIds.has(b.id))
+    if (availableCommentBots.length === 0) break
 
     for (let i = 0; i < commentCount; i++) {
-      if (availableBots.length === 0) break
-      const botIndex = Math.floor(Math.random() * availableBots.length)
-      const bot = availableBots.splice(botIndex, 1)[0]
+      if (availableCommentBots.length === 0) break
+
+      const botIndex = Math.floor(Math.random() * availableCommentBots.length)
+      const bot = availableCommentBots.splice(botIndex, 1)[0]
       usedBotIds.add(bot.id)
 
-      // Pick a template matching persona or general
       const matching = templates.filter(
         t => t.persona === bot.persona || t.persona === null
       )
@@ -80,14 +89,17 @@ export async function scheduleEngagement(postId: string) {
       })
     }
 
-    // Pick bots for reactions (can overlap with comment bots)
-    const reactionBots = bots
+    // Pick unique bots for reactions — each bot reacts only once per post
+    const reactionCount = randomBetween(wave.reactionCount[0], wave.reactionCount[1])
+    const availableReactionBots = bots.filter(b => !usedReactionBotIds.has(b.id))
+    const selectedReactionBots = availableReactionBots
       .sort(() => Math.random() - 0.5)
       .slice(0, reactionCount)
 
-    for (const bot of reactionBots) {
+    for (const bot of selectedReactionBots) {
+      usedReactionBotIds.add(bot.id)
+
       const scheduledFor = new Date(now)
-      // Reactions start after first comments
       scheduledFor.setMinutes(
         scheduledFor.getMinutes() + randomBetween(wave.minMin + 5, wave.maxMin + 10)
       )
@@ -103,16 +115,20 @@ export async function scheduleEngagement(postId: string) {
   }
 
   // Insert queues in parallel
-  await Promise.all([
+  const results = await Promise.all([
     commentQueue.length > 0
       ? supabase.from('bot_comment_queue').insert(commentQueue)
-      : Promise.resolve(),
+      : Promise.resolve({ error: null }),
     reactionQueue.length > 0
       ? supabase.from('bot_reaction_queue').insert(reactionQueue)
-      : Promise.resolve(),
+      : Promise.resolve({ error: null }),
   ])
 
-  console.log(
-    `Scheduled ${commentQueue.length} comments and ${reactionQueue.length} reactions for post ${postId}`
-  )
+  results.forEach(({ error }) => {
+    if (error) console.error('Queue insert error:', error.message)
+  })
+
+//   console.log(
+//     `Scheduled ${commentQueue.length} comments and ${reactionQueue.length} reactions for post ${postId}`
+//   )
 }

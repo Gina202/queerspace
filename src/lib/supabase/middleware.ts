@@ -13,9 +13,7 @@ export async function updateSession(request: NextRequest) {
           return request.cookies.getAll()
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) =>
-            request.cookies.set(name, value)
-          )
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
           supabaseResponse = NextResponse.next({ request })
           cookiesToSet.forEach(({ name, value, options }) =>
             supabaseResponse.cookies.set(name, value, options)
@@ -25,29 +23,43 @@ export async function updateSession(request: NextRequest) {
     }
   )
 
-  // IMPORTANT: getUser() must be called for the cookies to refresh properly
-  const { data: { user } } = await supabase.auth.getUser()
+  const protectedPaths = ['/feed', '/profile', '/post', '/premium', '/boost']
+  const isProtected = protectedPaths.some(p => request.nextUrl.pathname.startsWith(p))
+  const isAdminPath = request.nextUrl.pathname.startsWith('/admin')
 
-  // Protect paths requiring authentication
-  const protectedPaths = ['/feed', '/profile', '/post']
-  const isProtected = protectedPaths.some((p) => request.nextUrl.pathname.startsWith(p))
+  try {
+    const { data: { user } } = await supabase.auth.getUser()
 
-  if (isProtected) {
-    // 1. Kick out unauthenticated users
-    if (!user) {
+    if (isProtected && !user) {
       const url = request.nextUrl.clone()
       url.pathname = '/login'
       return NextResponse.redirect(url)
     }
 
-    // 2. Kick out banned users
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('is_banned')
-      .eq('id', user.id)
-      .single()
+    if (isAdminPath && !user) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/login'
+      return NextResponse.redirect(url)
+    }
 
-    if (profile?.is_banned) {
+    if (user && isProtected) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('is_banned')
+        .eq('id', user.id)
+        .single()
+
+      if (profile?.is_banned) {
+        const url = request.nextUrl.clone()
+        url.pathname = '/login'
+        return NextResponse.redirect(url)
+      }
+    }
+  } catch (err) {
+    // Network error or timeout — allow request through
+    // Pages will handle auth themselves
+    console.error('Middleware auth error:', err)
+    if (isProtected || isAdminPath) {
       const url = request.nextUrl.clone()
       url.pathname = '/login'
       return NextResponse.redirect(url)

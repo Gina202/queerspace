@@ -82,9 +82,18 @@ export default function RegisterPage({
                 required
                 className="mt-0.5 h-4 w-4 rounded border-zinc-600 accent-purple-500 cursor-pointer"
               />
-              <label htmlFor="age_confirmed" className="text-sm text-zinc-400 cursor-pointer">
-                I confirm I am <span className="text-white font-medium">18 years of age or older</span> and agree to the Terms of Service
-              </label>
+             <label htmlFor="age_confirmed" className="text-sm text-zinc-400 cursor-pointer">
+              I confirm I am{' '}
+              <span className="text-white font-medium">18 years of age or older</span>
+              {' '}and agree to the{' '}
+              <a href="/terms" target="_blank" className="text-purple-400 hover:text-purple-300 transition underline">
+                Terms of Service
+              </a>
+              {' '}and{' '}
+              <a href="/privacy" target="_blank" className="text-purple-400 hover:text-purple-300 transition underline">
+                Privacy Policy
+              </a>
+            </label>
             </div>
 
             <button
