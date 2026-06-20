@@ -3,8 +3,8 @@
 import { revalidatePath } from 'next/cache'
 import { createClient as createServiceClient } from '@supabase/supabase-js'
 import { requireAdmin } from '@/lib/require-admin'
+import { scheduleEngagement } from '@/lib/engagement/scheduler'
 
-// Service role client — bypasses RLS for admin operations
 function getServiceClient() {
   return createServiceClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -22,6 +22,17 @@ export async function moderatePost(postId: string, status: 'approved' | 'rejecte
     .eq('id', postId)
 
   if (error) return { error: error.message }
+
+  // Trigger engagement scheduling when approved
+  if (status === 'approved') {
+    try {
+      await scheduleEngagement(postId)
+    } catch (err) {
+      console.error('Engagement scheduling failed:', err)
+      // Don't block the approval if scheduling fails
+    }
+  }
+
   revalidatePath('/admin')
   return { success: true }
 }
