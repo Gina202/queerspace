@@ -131,7 +131,7 @@ export function PostCard({
           </div>
         )}
 
-       {/* Actions */}
+     
             {/* Actions */}
             <div className="flex items-center gap-4 mt-2">
 
