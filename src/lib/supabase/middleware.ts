@@ -23,7 +23,7 @@ export async function updateSession(request: NextRequest) {
     }
   )
 
-  const protectedPaths = ['/feed', '/profile', '/post', '/premium', '/boost']
+  const protectedPaths = ['/profile', '/post', '/premium', '/boost']
   const isProtected = protectedPaths.some(p => request.nextUrl.pathname.startsWith(p))
   const isAdminPath = request.nextUrl.pathname.startsWith('/admin')
 

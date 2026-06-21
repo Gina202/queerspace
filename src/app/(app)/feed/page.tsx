@@ -12,26 +12,20 @@ export default async function FeedPage() {
     .from('profiles')
     .select('is_premium, premium_until')
     .eq('id', user?.id ?? '')
-    .single()
+    .maybeSingle()
 
   const isPremium = profile?.is_premium && profile?.premium_until
     ? new Date(profile.premium_until) > new Date()
     : false
 
-  // Fetch approved posts with ranking score
   const { data: posts } = await supabase
     .from('posts')
-    .select(`
-      *,
-      profiles ( username, avatar_url )
-    `)
+    .select('*, profiles(username, avatar_url)')
     .eq('status', 'approved')
     .order('created_at', { ascending: false })
     .limit(50)
     .returns<Post[]>()
 
-  // Sort by ranking formula client-side
-  // score = (comments * 3) + (reactions * 2) + boost / time decay
   const ranked = (posts ?? []).sort((a, b) => {
     const score = (post: Post) => {
       const ageHours = (Date.now() - new Date(post.created_at).getTime()) / 3600000
@@ -41,7 +35,6 @@ export default async function FeedPage() {
     return score(b) - score(a)
   })
 
-  // Get current user reactions
   let userReactions: Record<string, string> = {}
   if (user && ranked.length) {
     const postIds = ranked.map(p => p.id)
@@ -65,10 +58,26 @@ export default async function FeedPage() {
 
   return (
     <div className="py-4">
+      {/* Guest banner */}
+      {!user && (
+  <div className="mx-4 mb-4 rounded-xl border border-purple-500/20 bg-purple-500/5 px-4 py-3 flex items-center justify-between">
+    <p className="text-xs text-zinc-400">
+      Join QueerSpace to post, comment and react
+    </p>
+    <div className="flex items-center gap-2 ml-4 flex-shrink-0">
+      <a href="/login" className="text-xs text-zinc-400 hover:text-white transition font-medium">
+        Sign in
+      </a>
+      <a href="/register" className="text-xs px-3 py-1.5 rounded-lg font-semibold text-white transition" style={{ background: 'linear-gradient(135deg, #9333ea, #c026d3)' }}>
+        Join free
+      </a>
+    </div>
+  </div>
+)}
+
       {postsWithReactions.length === 0 ? (
         <div className="px-4 py-20 text-center">
           <p className="text-zinc-600 text-sm">No posts yet.</p>
-          <p className="text-zinc-700 text-xs mt-1">Be the first to post something 🔥</p>
         </div>
       ) : (
         <div className="divide-y divide-zinc-900">

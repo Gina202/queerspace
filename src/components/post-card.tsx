@@ -131,37 +131,49 @@ export function PostCard({
           </div>
         )}
 
-        {/* Actions */}
-        <div className="flex items-center gap-4 mt-2">
-          <button
-            onClick={handleReact}
-            disabled={!currentUserId || reacting}
-            className={`flex items-center gap-1.5 text-sm transition ${userReaction ? 'text-orange-400' : 'text-zinc-500 hover:text-orange-400'} disabled:opacity-30`}
-          >
-            <Flame size={17} className={userReaction ? 'fill-orange-400' : ''} />
-            <span>{reactionCount}</span>
-          </button>
+       {/* Actions */}
+            {/* Actions */}
+            <div className="flex items-center gap-4 mt-2">
 
-          <button
-            onClick={() => setShowComments(v => !v)}
-            className="flex items-center gap-1.5 text-sm text-zinc-500 hover:text-purple-400 transition"
-          >
-            <MessageCircle size={17} />
-            <span>{commentCount}</span>
-          </button>
+              <button
+                onClick={currentUserId ? handleReact : () => window.location.href = '/register'}
+                disabled={reacting}
+                className={`flex items-center gap-1.5 text-sm transition ${
+                  userReaction
+                    ? 'text-orange-400'
+                    : 'text-zinc-500 hover:text-orange-400'
+                } disabled:opacity-30`}
+              >
+                <Flame size={17} className={userReaction ? 'fill-orange-400' : ''} />
+                <span>{reactionCount}</span>
+              </button>
 
-          <button
-            className="flex items-center gap-1.5 text-sm text-zinc-500 hover:text-purple-400 transition ml-auto"
-            onClick={() => {
-              if (navigator.share) {
-                navigator.share({ url: `${window.location.origin}/p/${post.id}` })
-              }
-            }}
-          >
-            <Share2 size={16} />
-          </button>
-        </div>
+              <button
+                onClick={() => {
+                  if (!currentUserId) {
+                    window.location.href = '/register'
+                    return
+                  }
+                  setShowComments(v => !v)
+                }}
+                className="flex items-center gap-1.5 text-sm text-zinc-500 hover:text-purple-400 transition"
+              >
+                <MessageCircle size={17} />
+                <span>{commentCount}</span>
+              </button>
 
+              <button
+                className="flex items-center gap-1.5 text-sm text-zinc-500 hover:text-purple-400 transition ml-auto"
+                onClick={() => {
+                  if (navigator.share) {
+                    navigator.share({ url: `${window.location.origin}/p/${post.id}` })
+                  }
+                }}
+              >
+                <Share2 size={16} />
+              </button>
+
+            </div>
         {/* Comments */}
         {showComments && (
           <CommentSection
